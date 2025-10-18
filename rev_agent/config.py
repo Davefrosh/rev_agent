@@ -2,19 +2,18 @@ import os
 from dotenv import load_dotenv
 
 
-# Load .env file if it exists (development), otherwise use environment variables (production)
 load_dotenv()
 
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if not OPENAI_API_KEY:
-    raise ValueError("OPENAI_API_KEY environment variable is required")
+    raise ValueError("OPENAI_API_KEY not found in .env file")
 
 
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://keblvjnepumswxlfgquv.supabase.co")
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 if not SUPABASE_KEY:
-    raise ValueError("SUPABASE_SERVICE_KEY environment variable is required")
+    raise ValueError("SUPABASE_SERVICE_KEY not found in .env file")
 
 
 LANGCHAIN_TRACING_V2 = os.getenv("LANGCHAIN_TRACING_V2", "true")

@@ -3,36 +3,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from typing import List, Dict, Optional
+from agent import query_agent, stream_agent
 import os
 import uvicorn
 import json
-import logging
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="Revenue Planning Agent",
     description="AI assistant for revenue planning and marketing strategy",
     version="1.0.0"
 )
-
-# Lazy import of agent to avoid startup issues
-_agent_module = None
-
-def get_agent_module():
-    """Lazy load agent module to avoid startup issues"""
-    global _agent_module
-    if _agent_module is None:
-        try:
-            from agent import query_agent, stream_agent
-            _agent_module = {"query_agent": query_agent, "stream_agent": stream_agent}
-            logger.info("Agent module loaded successfully")
-        except Exception as e:
-            logger.error(f"Failed to load agent module: {str(e)}")
-            raise
-    return _agent_module
 
 
 app.add_middleware(
@@ -42,16 +22,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Log startup information"""
-    logger.info("=" * 50)
-    logger.info("Revenue Planning Agent API Starting...")
-    logger.info(f"Environment: {os.getenv('FLASK_ENV', 'production')}")
-    logger.info(f"Port: {os.getenv('PORT', '8080')}")
-    logger.info("=" * 50)
 
 
 
@@ -89,9 +59,7 @@ async def chat(request: ChatRequest):
     Processes user query with optional conversation history and returns complete AI response
     """
     try:
-        agent_module = get_agent_module()
-        query_agent = agent_module["query_agent"]
-        
+       
         history = None
         if request.conversation_history:
             history = [
@@ -108,7 +76,6 @@ async def chat(request: ChatRequest):
         return ChatResponse(response=response)
         
     except Exception as e:
-        logger.error(f"Error in chat endpoint: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail=f"Error processing query: {str(e)}"
@@ -132,9 +99,6 @@ async def chat_stream(request: ChatRequest):
     ```
     """
     try:
-        agent_module = get_agent_module()
-        stream_agent = agent_module["stream_agent"]
-        
         history = None
         if request.conversation_history:
             history = [
@@ -202,13 +166,12 @@ async def health():
     Returns service status
     """
     try:
-        logger.info("Health check requested")
+       
         return HealthResponse(
             status="ok",
             message="Agent is running"
         )
     except Exception as e:
-        logger.error(f"Health check failed: {str(e)}")
         return HealthResponse(
             status="error",
             message=str(e)

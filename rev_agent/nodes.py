@@ -58,7 +58,7 @@ Be honest about your limitations. It's better to use tools than provide incomple
         return {
             "question": question,
             "can_answer_internally": assessment.can_answer,
-            "tools_tried": 
+            "tools_tried": []
         }
     
     def internal_knowledge_decision(state: AgentState) -> str:

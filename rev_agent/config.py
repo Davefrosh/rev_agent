@@ -7,13 +7,13 @@ load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if not OPENAI_API_KEY:
-    raise ValueError("OPENAI_API_KEY not found in .env file")
+    print("[WARNING] OPENAI_API_KEY not found - API functionality will be limited")
 
 
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://keblvjnepumswxlfgquv.supabase.co")
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 if not SUPABASE_KEY:
-    raise ValueError("SUPABASE_SERVICE_KEY not found in .env file")
+    print("[WARNING] SUPABASE_SERVICE_KEY not found - Vector search will not work")
 
 
 LANGCHAIN_TRACING_V2 = os.getenv("LANGCHAIN_TRACING_V2", "true")
@@ -34,7 +34,8 @@ else:
     os.environ["LANGCHAIN_TRACING_V2"] = "false"
 
 
-DOCX_PATH = "The CMO's Revenue Planning Playbook_ From Strategy to Sustainable Growth.docx"
+# DOCX_PATH is no longer needed - documents are stored in Supabase pgvector
+# DOCX_PATH = "The CMO's Revenue Planning Playbook_ From Strategy to Sustainable Growth.docx"
 
 
 EMBEDDING_MODEL = "text-embedding-3-small"  

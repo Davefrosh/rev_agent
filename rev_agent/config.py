@@ -34,8 +34,6 @@ else:
     os.environ["LANGCHAIN_TRACING_V2"] = "false"
 
 
-# DOCX_PATH is no longer needed - documents are stored in Supabase pgvector
-# DOCX_PATH = "The CMO's Revenue Planning Playbook_ From Strategy to Sustainable Growth.docx"
 
 
 EMBEDDING_MODEL = "text-embedding-3-small"  

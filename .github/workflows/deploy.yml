@@ -56,14 +56,7 @@ jobs:
             --platform=managed \
             --region=${{ env.REGION }} \
             --allow-unauthenticated \
-            --update-env-vars="OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" \
-            --update-env-vars="SUPABASE_URL=${{ secrets.SUPABASE_URL }}" \
-            --update-env-vars="SUPABASE_SERVICE_KEY=${{ secrets.SUPABASE_SERVICE_KEY }}" \
-            --update-env-vars="LANGCHAIN_TRACING_V2=${{ secrets.LANGCHAIN_TRACING_V2 || 'false' }}" \
-            --update-env-vars="LANGCHAIN_ENDPOINT=${{ secrets.LANGCHAIN_ENDPOINT || 'https://api.smith.langchain.com' }}" \
-            --update-env-vars="LANGCHAIN_API_KEY=${{ secrets.LANGCHAIN_API_KEY }}" \
-            --update-env-vars="LANGCHAIN_PROJECT=${{ secrets.LANGCHAIN_PROJECT || 'revenue-planning-agent' }}" \
-            --update-env-vars="TAVILY_API_KEY=${{ secrets.TAVILY_API_KEY }}" \
+            --update-env-vars="OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }},SUPABASE_URL=${{ secrets.SUPABASE_URL }},SUPABASE_SERVICE_KEY=${{ secrets.SUPABASE_SERVICE_KEY }},LANGCHAIN_TRACING_V2=${{ secrets.LANGCHAIN_TRACING_V2 || 'false' }},LANGCHAIN_ENDPOINT=${{ secrets.LANGCHAIN_ENDPOINT || 'https://api.smith.langchain.com' }},LANGCHAIN_API_KEY=${{ secrets.LANGCHAIN_API_KEY }},LANGCHAIN_PROJECT=${{ secrets.LANGCHAIN_PROJECT || 'revenue-planning-agent' }},TAVILY_API_KEY=${{ secrets.TAVILY_API_KEY }}" \
             --memory=2Gi \
             --cpu=2 \
             --timeout=300 \

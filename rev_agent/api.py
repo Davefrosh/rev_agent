@@ -211,6 +211,6 @@ if __name__ == "__main__":
         "api:app",
         host="0.0.0.0",
         port=port,
-        reload=False  # Disable reload in production
+        reload=False  
     )
 

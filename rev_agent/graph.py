@@ -7,7 +7,7 @@ from tools_setup import tavily_search
 
 
 def create_graph():
-    """Create and compile the Agentic RAG workflow graph with validation loop"""
+    """Create and compile the OPTIMIZED Agentic RAG workflow graph"""
     
     
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.5)
@@ -21,9 +21,8 @@ def create_graph():
     
     workflow = StateGraph(AgentState)
     
-    
-    workflow.add_node("assess_internal_knowledge", nodes["assess_internal_knowledge"])
-    workflow.add_node("route_query", nodes["route_query"])
+    # OPTIMIZED: Single routing node instead of assess + route
+    workflow.add_node("analyze_and_route", nodes["analyze_and_route"])
     workflow.add_node("execute_rag_tool", nodes["execute_rag_tool"])
     workflow.add_node("execute_tavily_tool", nodes["execute_tavily_tool"])
     workflow.add_node("execute_both_tools", nodes["execute_both_tools"])
@@ -31,23 +30,13 @@ def create_graph():
     workflow.add_node("generate_response", nodes["generate_response"])
     
     
+    # OPTIMIZED: Start directly with single routing node
+    workflow.add_edge(START, "analyze_and_route")
     
     
-    workflow.add_edge(START, "assess_internal_knowledge")
-    
-    
+    # OPTIMIZED: Direct routing from single node
     workflow.add_conditional_edges(
-        "assess_internal_knowledge",
-        nodes["internal_knowledge_decision"],
-        {
-            "generate_directly": "generate_response",
-            "route_to_tools": "route_query"
-        }
-    )
-    
-    
-    workflow.add_conditional_edges(
-        "route_query",
+        "analyze_and_route",
         nodes["route_decision"],
         {
             "use_rag": "execute_rag_tool",

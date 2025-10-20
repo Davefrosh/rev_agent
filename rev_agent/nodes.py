@@ -3,76 +3,16 @@ from langchain_core.output_parsers import StrOutputParser
 from pydantic import BaseModel, Field
 from typing import List, Literal
 from state import AgentState
+from utils import get_current_datetime_context
 
 
 def create_nodes(llm, retriever, tavily_search_tool):
     """Create all node functions for Agentic RAG workflow"""
     
     
-    class InternalKnowledgeAssessment(BaseModel):
-        """Assessment of whether AI Brain can answer with internal knowledge"""
-        can_answer: bool = Field(
-            description="Whether the AI can confidently answer this query using internal knowledge"
-        )
-        confidence: Literal["high", "medium", "low"] = Field(
-            description="Confidence level in the internal answer"
-        )
-        reasoning: str = Field(
-            description="Brief explanation of the assessment"
-        )
-    
-    structured_assessor = llm.with_structured_output(InternalKnowledgeAssessment)
-    
-    assessment_prompt = ChatPromptTemplate.from_messages([
-        ("system", """You are an AI Brain assessing whether you can answer a query using your internal knowledge.
-
-Consider whether you have sufficient knowledge to provide a complete, accurate answer without external tools.
-
-**Can answer with internal knowledge:**
-- General concepts, definitions, frameworks, methodologies
-- Well-established business practices and strategies
-- Common marketing metrics and their calculations
-- General advice and explanations
-
-**Need external tools:**
-- Specific current market data or recent statistics
-- Real-time information or latest trends
-- Specific company examples or case studies from the knowledge base
-- Questions requiring the CMO Revenue Planning Playbook content
-
-Be honest about your limitations. It's better to use tools than provide incomplete answers."""),
-        ("human", "Query: {question}")
-    ])
-    
-    assessment_chain = assessment_prompt | structured_assessor
-    
-    def assess_internal_knowledge(state: AgentState) -> dict:
-        """AI Brain first attempts to assess if it can answer with internal knowledge"""
-        messages = state["messages"]
-        question = messages[-1].content
-        
-        
-        assessment = assessment_chain.invoke({"question": question})
-        
-        
-        return {
-            "question": question,
-            "can_answer_internally": assessment.can_answer,
-            "tools_tried": []
-        }
-    
-    def internal_knowledge_decision(state: AgentState) -> str:
-        """Decide whether to generate response or route to tools"""
-        can_answer = state.get("can_answer_internally", False)
-        
-        if can_answer:
-            return "generate_directly"  
-        else:
-            return "route_to_tools"  
-    
-    
+    # OPTIMIZED: Combined routing decision - single LLM call instead of two
     class RouteDecision(BaseModel):
-        """Router decision for tool selection"""
+        """Smart router decision for tool selection"""
         tool_choice: Literal["rag", "tavily", "both", "none"] = Field(
             description="Which tool(s) to use: 'rag' for knowledge base, 'tavily' for web search, 'both' for comprehensive answers, 'none' for direct LLM response"
         )
@@ -102,8 +42,9 @@ Your job is to analyze the user's query and decide which tool(s) to use:
 - Use when one tool alone might not provide sufficient comprehensive answer
 
 **No Tools (Direct LLM):**
-- Use for: General questions, greetings, clarifications, simple explanations
-- When: Query doesn't require specific knowledge base or current information
+- Use for: Simple questions, greetings, basic date/time queries, clarifications, general explanations
+- When: Query doesn't require specific knowledge base or current web information
+- Examples: "Hello", "What's today's date?", "Thanks", "Explain CAC in simple terms"
 
 Analyze the query and make the best routing decision."""),
         ("human", "User query: {question}")
@@ -111,17 +52,18 @@ Analyze the query and make the best routing decision."""),
     
     router_chain = router_prompt | structured_router
     
-    def route_query(state: AgentState) -> dict:
-        """Analyze query and decide which tool(s) to use"""
+    def analyze_and_route(state: AgentState) -> dict:
+        """OPTIMIZED: Single-step analysis and routing (replaces assess + route)"""
         messages = state["messages"]
         question = messages[-1].content
         
-        
+        # Single LLM call for routing decision
         decision = router_chain.invoke({"question": question})
         
         return {
             "question": question,
-            "tool_choice": decision.tool_choice
+            "tool_choice": decision.tool_choice,
+            "tools_tried": []
         }
     
     
@@ -303,6 +245,8 @@ Assess the quality and decide the next action.""")
     generator_prompt = ChatPromptTemplate.from_messages([
         ("system", """You are a specialized Revenue Planning AI Assistant for CMOs and marketing leaders.
 
+{datetime_context}
+
 **Your Expertise:**
 - Revenue planning strategies and frameworks
 - Marketing metrics (CAC, LTV, ARR, MQL, pipeline calculations)
@@ -321,6 +265,7 @@ Assess the quality and decide the next action.""")
 - When synthesizing from multiple sources, integrate them smoothly
 - If you don't have enough information, acknowledge it rather than guessing
 - Maintain a professional, advisory tone suitable for C-level executives
+- For date/time queries, use the current system information provided above
 
 {context_instruction}
 
@@ -338,6 +283,8 @@ Assess the quality and decide the next action.""")
         conversation_history = state.get("conversation_history", [])
         tool_choice = state.get("tool_choice", "none")
         
+        # OPTIMIZED: Get current date/time context
+        datetime_context = get_current_datetime_context()
         
         context_parts = []
         
@@ -369,6 +316,7 @@ Assess the quality and decide the next action.""")
         
         generation = generator_chain.invoke({
             "question": question,
+            "datetime_context": datetime_context,
             "context_instruction": context_instruction,
             "history_context": history_text
         })
@@ -433,17 +381,15 @@ Assess the quality and decide the next action.""")
     
     
     return {
-        
-        "assess_internal_knowledge": assess_internal_knowledge,
-        "route_query": route_query,
+        # OPTIMIZED: Single routing node instead of assess + route
+        "analyze_and_route": analyze_and_route,
         "execute_rag_tool": execute_rag_tool,
         "execute_tavily_tool": execute_tavily_tool,
         "execute_both_tools": execute_both_tools,
         "validate_and_reason": validate_and_reason,
         "generate_response": generate_response,
         
-        
-        "internal_knowledge_decision": internal_knowledge_decision,
+        # Decision functions
         "route_decision": route_decision,
         "validation_decision": validation_decision
     }
